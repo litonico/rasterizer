@@ -45,16 +45,19 @@ fn main() {
 
     let mut events = ctx.event_pump().unwrap();
 
-    'event : loop {
+    'main : loop {
         let start_time = Instant::now();
 
-        for event in events.poll_iter() {
-            match event {
-                // Handle keys here
-                Event::Quit{..} => break 'event,
-                _               => continue
+        'event : loop {
+
+            for event in events.poll_iter() {
+                match event {
+                    // Handle keys here
+                    Event::Quit{..} => break 'main,
+                    _               => break 'event
+                }
             }
-        }
+        };
 
         // TODO(Lito): Is there overhead in making an Instant::now twice?
         // How about making a bunch of Durations?
