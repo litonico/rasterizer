@@ -22,14 +22,14 @@ fn line(x0: i32, y0: i32,
         for x in x0..x1 {
             let t = (x-x0) as f32 / (x1-x0) as f32;
             let y = y0 as f32 * (1.-t) + y1 as f32 * t;
-            let p = Point::new(x as i32, y as i32);
+            let p = Point::new(x as i32, y.round() as i32);
             renderer.draw_point(p);
         }
     } else {
         for y in y0..y1 {
             let t = (y-y0) as f32 / (y1-y0) as f32;
             let x = x0 as f32 * (1.-t) + x1 as f32 * t;
-            let p = Point::new(x as i32, y as i32);
+            let p = Point::new(x.round() as i32, y as i32);
             renderer.draw_point(p);
         }
     }
@@ -56,9 +56,9 @@ fn main() {
 
     let mut window = match video_ctx.window(TITLE, window_width, window_height)
         .position_centered().opengl().build() {
-        Ok(window) => window,
-        Err(err)   => panic!("failed to create window: {}", err)
-    };
+            Ok(window) => window,
+            Err(err)   => panic!("failed to create window: {}", err)
+        };
 
     let mut renderer = match window.renderer().build() {
         Ok(renderer) => renderer,
@@ -75,16 +75,15 @@ fn main() {
 
     let mut events = ctx.event_pump().unwrap();
 
+
     'main : loop {
         let start_time = Instant::now();
 
-        'event : loop {
-            for event in events.poll_iter() {
-                match event {
-                    // Handle keys here
-                    Event::Quit{..} => break 'main,
-                    _               => break 'event
-                }
+        for event in events.poll_iter() {
+            match event {
+                // Handle keys here
+                Event::Quit{..} => break 'main,
+                _               => continue
             }
         };
 
