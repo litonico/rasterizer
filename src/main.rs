@@ -1,4 +1,6 @@
 extern crate sdl2;
+pub mod objparse;
+
 use sdl2::event::{Event};
 use sdl2::rect::{Point};
 use sdl2::pixels::{Color};
@@ -11,6 +13,13 @@ static HEIGHT : u32 = 100;
 static TITLE  : &'static str = "Pixels";
 static FPS    : u8 = 15;
 
+fn main() {
+    let objfile = objparse::read("./model.obj");
+    let model = objparse::parse(objfile);
+}
+
+
+/*
 fn line(x0: i32, y0: i32,
         x1: i32, y1: i32,
         renderer: &mut Renderer, color: Color) {
@@ -48,13 +57,12 @@ fn main() {
 
     let ctx = sdl2::init().unwrap();
     let video_ctx = ctx.video().unwrap();
-    let mut timer = ctx.timer().unwrap();
 
     let scale = 1;
     let window_width = WIDTH * scale;
     let window_height = HEIGHT * scale;
 
-    let mut window = match video_ctx.window(TITLE, window_width, window_height)
+    let window = match video_ctx.window(TITLE, window_width, window_height)
         .position_centered().opengl().build() {
             Ok(window) => window,
             Err(err)   => panic!("failed to create window: {}", err)
@@ -106,3 +114,4 @@ fn main() {
         sleep(sleep_time);
     }
 }
+*/
