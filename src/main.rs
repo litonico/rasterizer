@@ -1,55 +1,92 @@
 extern crate sdl2;
 pub mod objparse;
 
+use objparse::{Model, Face, Vertex};
+
 use sdl2::event::{Event};
 use sdl2::rect::{Point};
 use sdl2::pixels::{Color};
 use sdl2::render::{Renderer};
+
 use std::time::{Instant, Duration};
 use std::thread::{sleep};
 
-static WIDTH  : u32 = 100;
-static HEIGHT : u32 = 100;
+static WIDTH  : u32 = 500;
+static HEIGHT : u32 = 500;
 static TITLE  : &'static str = "Pixels";
 static FPS    : u8 = 15;
 
-fn main() {
-    let objfile = objparse::read("./model.obj");
-    let model = objparse::parse(objfile);
-}
-
-
-/*
-fn line(x0: i32, y0: i32,
-        x1: i32, y1: i32,
+fn draw_line(mut x0: i32, mut y0: i32,
+        mut x1: i32, mut y1: i32,
         renderer: &mut Renderer, color: Color) {
 
     renderer.set_draw_color(color);
 
-    let steep = if (x0-x1) < (y0-y1) { true } else { false };
-    if steep {
-        for x in x0..x1 {
-            let t = (x-x0) as f32 / (x1-x0) as f32;
-            let y = y0 as f32 * (1.-t) + y1 as f32 * t;
-            let p = Point::new(x as i32, y.round() as i32);
-            renderer.draw_point(p);
-        }
-    } else {
-        for y in y0..y1 {
-            let t = (y-y0) as f32 / (y1-y0) as f32;
-            let x = x0 as f32 * (1.-t) + x1 as f32 * t;
-            let p = Point::new(x.round() as i32, y as i32);
-            renderer.draw_point(p);
-        }
+    let dx = (x1-x0).abs();
+    let dy = (y1-y0).abs();
+    let steep = if dx < dy { true } else { false };
+
+    // TODO(Lito): Why is it so hard to write a swap function?
+    if steep { // transpose the whole drawing across x = y
+        let mut tmp_x = x0;
+        x0 = y0;
+        y0 = tmp_x;
+
+        tmp_x = x1;
+        x1 = y1;
+        y1 = tmp_x;
+    }
+
+    if (x0 > x1) {
+        let mut tmp = x0;
+        x0 = x1;
+        x1 = tmp;
+
+        tmp = y0;
+        y0 = y1;
+        y1 = tmp;
+    }
+
+    // assert!(x1 > x0, "x0:{}, x1:{}", x0, x1);
+    for x in x0..x1 {
+        let t = (x-x0) as f32 / (x1-x0) as f32;
+        let y = y0 as f32 * (1.-t) + y1 as f32 * t;
+        let p = if steep {
+            Point::new(y as i32, x as i32) // transposed
+        } else {
+            Point::new(x as i32, y as i32)
+        };
+        renderer.draw_point(p);
     }
 }
 
-fn draw(width: u32, height: u32, image: &mut Renderer) {
+fn draw(scene: &Model, width: u32, height: u32, image: &mut Renderer) {
     let white = Color::RGB(255, 255, 255);
     let red = Color::RGB(255, 0, 0);
-    line(13, 20, 80, 40, image, white);
-    line(10, 10, 80, 80, image, white);
-    line(20, 13, 40, 80, image, red);
+    for x in 0..10 {
+        draw_line(40, 10,  x*30, 100, image, white);
+        draw_line(40, 200, x*30, 100, image, white);
+    }
+    // draw_edges(scene, image);
+}
+
+fn draw_xy_line_between_verts(v1: Vertex, v2: Vertex, r: &mut Renderer, c: Color) {
+    let scale = 1.;
+    draw_line((v1.x * scale) as i32, (v1.y * scale) as i32,
+              (v2.x * scale) as i32, (v2.y * scale) as i32, r, c);
+}
+
+fn draw_edges(model: &Model, image: &mut Renderer) {
+    let white = Color::RGB(255, 255, 255);
+    for face in &model.faces {
+        let v0 = model.verts[face.verts[0]];
+        let v1 = model.verts[face.verts[1]];
+        let v2 = model.verts[face.verts[2]];
+
+        draw_xy_line_between_verts(v0, v1, image, white);
+        draw_xy_line_between_verts(v1, v2, image, white);
+        draw_xy_line_between_verts(v2, v0, image, white);
+    }
 }
 
 fn main() {
@@ -77,7 +114,19 @@ fn main() {
     renderer.set_draw_color(Color::RGB(0,0,0));
     renderer.clear();
 
-    draw(window_width, window_height, &mut renderer);
+    // let starman : Model = objparse::load("./model.obj");
+
+    let faces = vec![Face { verts: vec![0, 1, 2] }];
+    let verts = vec![Vertex {x:10.,  y:10.,  z:0.},
+                     Vertex {x:200., y:200., z:0.},
+                     Vertex {x:0.,  y:200., z:0.}];
+
+    let triangle : Model = Model {
+        verts: verts,
+        faces: faces,
+    };
+
+    draw(&triangle, window_width, window_height, &mut renderer);
 
     renderer.present();
 
@@ -114,4 +163,3 @@ fn main() {
         sleep(sleep_time);
     }
 }
-*/
