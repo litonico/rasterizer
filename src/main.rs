@@ -16,6 +16,19 @@ static HEIGHT : u32 = 500;
 static TITLE  : &'static str = "Pixels";
 static FPS    : u8 = 15;
 
+fn triangle() -> Model {
+    let faces = vec![Face { verts: vec![0, 1, 2] }];
+    let verts = vec![Vertex {x:10.,  y:10.,  z:0.},
+                     Vertex {x:200., y:200., z:0.},
+                     Vertex {x:0.,  y:200., z:0.}];
+
+    let triangle : Model = Model {
+        verts: verts,
+        faces: faces,
+    };
+    triangle
+}
+
 fn draw_line(mut x0: i32, mut y0: i32,
         mut x1: i32, mut y1: i32,
         renderer: &mut Renderer, color: Color) {
@@ -52,9 +65,9 @@ fn draw_line(mut x0: i32, mut y0: i32,
         let t = (x-x0) as f32 / (x1-x0) as f32;
         let y = y0 as f32 * (1.-t) + y1 as f32 * t;
         let p = if steep {
-            Point::new(y as i32, x as i32) // transposed
+            Point::new(y.round() as i32, x) // transposed
         } else {
-            Point::new(x as i32, y as i32)
+            Point::new(x, y.round() as i32)
         };
         renderer.draw_point(p);
     }
@@ -63,25 +76,23 @@ fn draw_line(mut x0: i32, mut y0: i32,
 fn draw(scene: &Model, width: u32, height: u32, image: &mut Renderer) {
     let white = Color::RGB(255, 255, 255);
     let red = Color::RGB(255, 0, 0);
-    for x in 0..10 {
-        draw_line(40, 10,  x*30, 100, image, white);
-        draw_line(40, 200, x*30, 100, image, white);
-    }
-    // draw_edges(scene, image);
+    draw_edges(scene, image);
 }
 
 fn draw_xy_line_between_verts(v1: Vertex, v2: Vertex, r: &mut Renderer, c: Color) {
-    let scale = 1.;
-    draw_line((v1.x * scale) as i32, (v1.y * scale) as i32,
-              (v2.x * scale) as i32, (v2.y * scale) as i32, r, c);
+    let scale = 100.;
+    let shift_x = 200.;
+    let shift_y = 200.;
+    draw_line((v1.x * scale + shift_x) as i32, (v1.y * scale + shift_y) as i32,
+              (v2.x * scale + shift_x) as i32, (v2.y * scale + shift_y) as i32, r, c);
 }
 
 fn draw_edges(model: &Model, image: &mut Renderer) {
     let white = Color::RGB(255, 255, 255);
     for face in &model.faces {
-        let v0 = model.verts[face.verts[0]];
-        let v1 = model.verts[face.verts[1]];
-        let v2 = model.verts[face.verts[2]];
+        let v0 = model.verts[face.verts[0]-1];
+        let v1 = model.verts[face.verts[1]-1];
+        let v2 = model.verts[face.verts[2]-1];
 
         draw_xy_line_between_verts(v0, v1, image, white);
         draw_xy_line_between_verts(v1, v2, image, white);
@@ -114,19 +125,12 @@ fn main() {
     renderer.set_draw_color(Color::RGB(0,0,0));
     renderer.clear();
 
-    // let starman : Model = objparse::load("./model.obj");
+    let starman : Model = objparse::load("./model.obj");
+    let medamaude : Model = objparse::load("./medamaude.obj");
+    let cube : Model = objparse::load("./cube.obj");
+    let triangle = triangle();
 
-    let faces = vec![Face { verts: vec![0, 1, 2] }];
-    let verts = vec![Vertex {x:10.,  y:10.,  z:0.},
-                     Vertex {x:200., y:200., z:0.},
-                     Vertex {x:0.,  y:200., z:0.}];
-
-    let triangle : Model = Model {
-        verts: verts,
-        faces: faces,
-    };
-
-    draw(&triangle, window_width, window_height, &mut renderer);
+    draw(&starman, window_width, window_height, &mut renderer);
 
     renderer.present();
 

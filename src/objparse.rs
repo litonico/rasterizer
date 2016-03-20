@@ -52,10 +52,10 @@ pub fn parse(file: String) -> Model {
     let mut verts : Vec<Vertex> = Vec::new();
     let mut faces : Vec<Face>   = Vec::new();
     for line in file.lines() {
-        let leading_char = line.chars().next();
-        match leading_char {
-            Some('v') => verts.push(parse_obj_vert(line)),
-            Some('f') => faces.push(parse_obj_face(line)),
+        let leading_str = line.split(" ").next();
+        match leading_str {
+            Some("v") => verts.push(parse_obj_vert(line)),
+            Some("f") => faces.push(parse_obj_face(line)),
             _   => continue
         }
     }
