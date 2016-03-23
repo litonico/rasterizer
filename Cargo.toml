@@ -5,3 +5,4 @@ authors = ["Lito Nicolai <lito.nicolai@gmail.com>"]
 
 [dependencies]
 sdl2 = "*"
+rand = "*"

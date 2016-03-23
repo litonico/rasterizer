@@ -1,4 +1,6 @@
 extern crate sdl2;
+extern crate rand;
+
 pub mod objparse;
 
 use objparse::{Model, Face, Vertex};
@@ -17,10 +19,10 @@ static TITLE  : &'static str = "Pixels";
 static FPS    : u8 = 15;
 
 fn triangle() -> Model {
-    let faces = vec![Face { verts: vec![0, 1, 2] }];
-    let verts = vec![Vertex {x:10.,  y:10.,  z:0.},
-                     Vertex {x:200., y:200., z:0.},
-                     Vertex {x:0.,  y:200., z:0.}];
+    let faces = vec![Face { verts: vec![1, 2, 3] }];
+    let verts = vec![Vertex {x:0.01,  y:0.01,  z:0.},
+    Vertex {x:2., y:1., z:0.},
+    Vertex {x:0.,  y:2., z:0.}];
 
     let triangle : Model = Model {
         verts: verts,
@@ -30,8 +32,8 @@ fn triangle() -> Model {
 }
 
 fn draw_line(mut x0: i32, mut y0: i32,
-        mut x1: i32, mut y1: i32,
-        renderer: &mut Renderer, color: Color) {
+             mut x1: i32, mut y1: i32,
+             renderer: &mut Renderer, color: Color) {
 
     renderer.set_draw_color(color);
 
@@ -73,10 +75,10 @@ fn draw_line(mut x0: i32, mut y0: i32,
     }
 }
 
-fn draw(scene: &Model, width: u32, height: u32, image: &mut Renderer) {
+fn draw(model: &Model, width: u32, height: u32, image: &mut Renderer) {
     let white = Color::RGB(255, 255, 255);
     let red = Color::RGB(255, 0, 0);
-    draw_edges(scene, image);
+    draw_faces(model, image);
 }
 
 fn draw_xy_line_between_verts(v1: Vertex, v2: Vertex, r: &mut Renderer, c: Color) {
@@ -84,19 +86,51 @@ fn draw_xy_line_between_verts(v1: Vertex, v2: Vertex, r: &mut Renderer, c: Color
     let shift_x = 200.;
     let shift_y = 200.;
     draw_line((v1.x * scale + shift_x) as i32, (v1.y * scale + shift_y) as i32,
-              (v2.x * scale + shift_x) as i32, (v2.y * scale + shift_y) as i32, r, c);
+    (v2.x * scale + shift_x) as i32, (v2.y * scale + shift_y) as i32, r, c);
 }
 
-fn draw_edges(model: &Model, image: &mut Renderer) {
-    let white = Color::RGB(255, 255, 255);
+fn draw_wireframe_triangle(v0: Vertex, v1: Vertex, v2: Vertex, image: &mut Renderer, color: Color) {
+    draw_xy_line_between_verts(v0, v1, image, color);
+    draw_xy_line_between_verts(v1, v2, image, color);
+    draw_xy_line_between_verts(v2, v0, image, color);
+}
+
+fn draw_filled_triangle(mut v0: Vertex, mut v1: Vertex, mut v2: Vertex,
+                        image: &mut Renderer, color: Color) {
+    // Bubble sort verts
+    if v0.y > v1.y {
+        let tmp = v0;
+        v0 = v1;
+        v1 = tmp;
+    }
+    if v0.y > v2.y {
+        let tmp = v0;
+        v0 = v2;
+        v2 = tmp;
+    }
+    if v1.y > v2.y {
+        let tmp = v1;
+        v1 = v2;
+        v2 = tmp;
+    }
+    let y = v0.y as u32;
+    for 
+        // draw_xy_line_between_verts(v0, v1, image, Color::RGB(0,255,0));
+        // draw_xy_line_between_verts(v1, v2, image, Color::RGB(0,255,0));
+        // draw_xy_line_between_verts(v2, v0, image, Color::RGB(255,0,0));
+
+}
+
+fn draw_faces(model: &Model, image: &mut Renderer) {
     for face in &model.faces {
+        let color = Color::RGB(rand::random::<u8>(),
+        rand::random::<u8>(),
+        rand::random::<u8>());
         let v0 = model.verts[face.verts[0]-1];
         let v1 = model.verts[face.verts[1]-1];
         let v2 = model.verts[face.verts[2]-1];
 
-        draw_xy_line_between_verts(v0, v1, image, white);
-        draw_xy_line_between_verts(v1, v2, image, white);
-        draw_xy_line_between_verts(v2, v0, image, white);
+        draw_filled_triangle(v0, v1, v2, image, color);
     }
 }
 
@@ -130,7 +164,7 @@ fn main() {
     let cube : Model = objparse::load("./cube.obj");
     let triangle = triangle();
 
-    draw(&starman, window_width, window_height, &mut renderer);
+    draw(&triangle, window_width, window_height, &mut renderer);
 
     renderer.present();
 
