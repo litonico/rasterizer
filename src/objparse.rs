@@ -21,6 +21,19 @@ pub struct Model {
     // normals
     // objects
 }
+impl Model {
+    pub fn scale_uniform(&mut self, s: f64) {
+        for v in &mut self.verts { v.x = v.x * s; v.y = v.y * s; v.z = v.z * s; }
+    }
+
+    pub fn scale(&mut self, x: f64, y: f64, z: f64) {
+        for v in &mut self.verts { v.x = v.x * x; v.y = v.y * y; v.z = v.z * z; }
+    }
+
+    pub fn shift(&mut self, x: f64, y: f64, z: f64) {
+        for v in &mut self.verts { v.x = v.x+x; v.y = v.y+y; v.z = v.z+z; }
+    }
+}
 
 fn parse_obj_face(line: &str) -> Face {
     // f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3

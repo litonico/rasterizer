@@ -20,15 +20,43 @@ static FPS    : u8 = 15;
 
 fn triangle() -> Model {
     let faces = vec![Face { verts: vec![1, 2, 3] }];
-    let verts = vec![Vertex {x:0.01,  y:0.01,  z:0.},
-    Vertex {x:2., y:1., z:0.},
-    Vertex {x:0.,  y:2., z:0.}];
+    let verts = vec![
+        Vertex {x:10.,  y:70.,  z:0.},
+        Vertex {x:50., y:160., z:0.},
+        Vertex {x:70.,  y:80., z:0.}];
 
     let triangle : Model = Model {
         verts: verts,
         faces: faces,
     };
     triangle
+}
+
+fn triangles() -> Model {
+    let faces = vec![
+        Face { verts: vec![1, 2, 3] },
+        Face { verts: vec![4, 5, 6] },
+        Face { verts: vec![7, 8, 9] },
+    ];
+    let verts = vec![
+        Vertex {x:10.,  y:70.,  z:0.},
+        Vertex {x:50., y:160., z:0.},
+        Vertex {x:70.,  y:80., z:0.},
+
+        Vertex {x:180.,  y:50.,  z:0.},
+        Vertex {x:150., y:1., z:0.},
+        Vertex {x:70.,  y:180., z:0.},
+
+        Vertex {x:180.,  y:150.,  z:0.},
+        Vertex {x:120., y:160., z:0.},
+        Vertex {x:130.,  y:180., z:0.},
+    ];
+
+    let triangles : Model = Model {
+        verts: verts,
+        faces: faces,
+    };
+    triangles
 }
 
 fn draw_line(mut x0: i32, mut y0: i32,
@@ -52,15 +80,7 @@ fn draw_line(mut x0: i32, mut y0: i32,
         y1 = tmp_x;
     }
 
-    if (x0 > x1) {
-        let mut tmp = x0;
-        x0 = x1;
-        x1 = tmp;
-
-        tmp = y0;
-        y0 = y1;
-        y1 = tmp;
-    }
+    if x0 > x1 { let mut tmp = x0; x0 = x1; x1 = tmp; tmp = y0; y0 = y1; y1 = tmp; }
 
     // assert!(x1 > x0, "x0:{}, x1:{}", x0, x1);
     for x in x0..x1 {
@@ -82,11 +102,8 @@ fn draw(model: &Model, width: u32, height: u32, image: &mut Renderer) {
 }
 
 fn draw_xy_line_between_verts(v1: Vertex, v2: Vertex, r: &mut Renderer, c: Color) {
-    let scale = 100.;
-    let shift_x = 200.;
-    let shift_y = 200.;
-    draw_line((v1.x * scale + shift_x) as i32, (v1.y * scale + shift_y) as i32,
-    (v2.x * scale + shift_x) as i32, (v2.y * scale + shift_y) as i32, r, c);
+    draw_line(v1.x.round() as i32, v1.y.round() as i32,
+              v2.x.round() as i32, v2.y.round() as i32, r, c);
 }
 
 fn draw_wireframe_triangle(v0: Vertex, v1: Vertex, v2: Vertex, image: &mut Renderer, color: Color) {
@@ -97,40 +114,61 @@ fn draw_wireframe_triangle(v0: Vertex, v1: Vertex, v2: Vertex, image: &mut Rende
 
 fn draw_filled_triangle(mut v0: Vertex, mut v1: Vertex, mut v2: Vertex,
                         image: &mut Renderer, color: Color) {
+    image.set_draw_color(color);
     // Bubble sort verts
-    if v0.y > v1.y {
-        let tmp = v0;
-        v0 = v1;
-        v1 = tmp;
-    }
-    if v0.y > v2.y {
-        let tmp = v0;
-        v0 = v2;
-        v2 = tmp;
-    }
-    if v1.y > v2.y {
-        let tmp = v1;
-        v1 = v2;
-        v2 = tmp;
-    }
-    let y = v0.y as u32;
-    for 
-        // draw_xy_line_between_verts(v0, v1, image, Color::RGB(0,255,0));
-        // draw_xy_line_between_verts(v1, v2, image, Color::RGB(0,255,0));
-        // draw_xy_line_between_verts(v2, v0, image, Color::RGB(255,0,0));
+    if v0.y > v1.y { let tmp = v0; v0 = v1; v1 = tmp; }
+    if v0.y > v2.y { let tmp = v0; v0 = v2; v2 = tmp; }
+    if v1.y > v2.y { let tmp = v1; v1 = v2; v2 = tmp; }
 
+    let triangle_height = v2.y - v0.y;
+
+    let y0 = v0.y.round() as i32;
+    let y1 = v1.y.round() as i32;
+    let y2 = v2.y.round() as i32;
+
+    for y in (y0+1)..(y1+1) {
+        let segment_height = v1.y - v0.y + 1.;
+        let alpha : f64 = (y as f64 - v0.y)/triangle_height;
+        let beta  : f64 = (y as f64 - v0.y)/segment_height; // careful: div 0
+        let mut A = (v0.x + (v2.x-v0.x)*alpha).round() as i32;
+        let mut B = (v0.x + (v1.x-v0.x)*beta ).round() as i32;
+
+        // draw lines between edges
+        if A > B { let tmp = A; A = B; B = tmp; }
+        for x in A..(B+1) {
+            let p = Point::new(x, y);
+            image.draw_point(p);
+        }
+    }
+    for y in (y1+1)..(y2+1) {
+        let segment_height = v2.y - v1.y + 1.;
+        let alpha : f64 = (y as f64 - v0.y)/triangle_height;
+        let beta  : f64 = (y as f64 - v1.y)/segment_height; // careful: div 0
+        let mut A = (v0.x + (v2.x-v0.x)*alpha).round() as i32;
+        let mut B = (v1.x + (v2.x-v1.x)*beta ).round() as i32;
+
+        // draw lines between edges
+        if A > B { let tmp = A; A = B; B = tmp; }
+        for x in A..(B+1) {
+            let p = Point::new(x, y);
+            image.draw_point(p);
+        }
+    }
 }
 
 fn draw_faces(model: &Model, image: &mut Renderer) {
     for face in &model.faces {
-        let color = Color::RGB(rand::random::<u8>(),
-        rand::random::<u8>(),
-        rand::random::<u8>());
+        let white = Color::RGB(255,255,255);
+        let green = Color::RGB(0,255,0);
+        let random_color = Color::RGB(rand::random::<u8>(),
+                                      rand::random::<u8>(),
+                                      rand::random::<u8>());
         let v0 = model.verts[face.verts[0]-1];
         let v1 = model.verts[face.verts[1]-1];
         let v2 = model.verts[face.verts[2]-1];
 
-        draw_filled_triangle(v0, v1, v2, image, color);
+        draw_filled_triangle(v0, v1, v2, image, random_color);
+        // draw_wireframe_triangle(v0, v1, v2, image, green);
     }
 }
 
@@ -159,12 +197,17 @@ fn main() {
     renderer.set_draw_color(Color::RGB(0,0,0));
     renderer.clear();
 
-    let starman : Model = objparse::load("./model.obj");
-    let medamaude : Model = objparse::load("./medamaude.obj");
-    let cube : Model = objparse::load("./cube.obj");
-    let triangle = triangle();
+    let mut starman : Model = objparse::load("./model.obj");
+    starman.scale(90., -90., 90.);
+    starman.shift(240.,190.,0.);
 
-    draw(&triangle, window_width, window_height, &mut renderer);
+    let mut medamaude : Model = objparse::load("./medamaude.obj");
+    medamaude.scale(500., -500., 500.);
+    medamaude.shift(100.,0.,0.);
+    let mut cube : Model = objparse::load("./cube.obj");
+    let mut triangles = triangles();
+
+    draw(&starman, window_width, window_height, &mut renderer);
 
     renderer.present();
 
